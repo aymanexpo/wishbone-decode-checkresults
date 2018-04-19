@@ -22,6 +22,7 @@
 #
 #
 
+
 from wishbone import Actor
 from wishbone.event import Metric
 import re
@@ -85,34 +86,16 @@ class CheckResults(Actor):
 
         d = self.__chopStringDict(data)
 
-        for metric in re.findall('(\w*?\'*=\d*(?:\.\d*)?(?:s|us|ms|%|B|MB|KB|TB|c)?)', d["perfdata"]):
-            # name and value
-            (metric_name, metric_value) = metric.split('=')
-            metric_name = self.__filter(metric_name)
-            # metric time
-            metric_timet = d["timet"]
-
-            # metric unit
-            re_unit = re.search("\D+$", metric_value)
-            if re_unit is None:
-                metric_unit = ''
-            else:
-                metric_unit = re_unit.group(0)
-            metric_value = metric_value.rstrip(metric_unit)
-
-            # tags
-            tags = [d["type"], d["checkcommand"]]
-
-            yield Metric(metric_timet, "nagios", d["hostname"], "%s.%s" % (d["name"], metric_name), metric_value, metric_unit, tuple(tags))
+        yield Metric(d["start_time"], "nagios", d["host_name"], "%s.%s" % (d["service_description"], 'return_code'), d["return_code"], '', tuple([]))
 
     def __chopStringDict(self, data):
         '''Returns a dictionary of the provided raw service/host check string.'''
 
         r = {}
-        d = data.split('\t')
+        d = data.split('\n')
 
         for item in d:
-            item_parts = item.split('::')
+            item_parts = item.split('=')
             if len(item_parts) == 2:
                 (name, value) = item_parts
             else:
@@ -122,27 +105,15 @@ class CheckResults(Actor):
             name = self.__filter(name)
             r[name] = value
 
-        if "hostperfdata" in r:
-            r["type"] = "hostcheck"
-            r["perfdata"] = r["hostperfdata"]
-            r["checkcommand"] = re.search("(.*?)!\(?.*", r["hostcheckcommand"]).group(1)
-            r["name"] = "hostcheck"
-        else:
-            r["type"] = "servicecheck"
-            r["perfdata"] = r["serviceperfdata"]
-            r["checkcommand"] = re.search("((.*)(?=\!)|(.*))", r["servicecheckcommand"]).group(1)
-            r["name"] = self.__filter(r["servicedesc"])
-
-        r["hostname"] = self.replacePeriod(self.__filter(r["hostname"]))
+        # if service_description is present then it's a service result otherwise host result
+        if "service_description" in r:
+            r["service_description"] = self.replacePeriod(self.__filter(r["service_description"]))
+        r["host_name"] = self.replacePeriod(self.__filter(r["host_name"]))
 
         return r
 
     def __filter(self, name):
-        '''Filter out problematic characters.
-
-        This should become a separate module allowing the user to define filter rules
-        from a bootstrap file and most likely become a separate module.
-        '''
+        '''Filter out problematic characters and turn it to lowercase.'''
 
         name = name.replace("'", '')
         name = name.replace('"', '')
