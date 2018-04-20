@@ -103,7 +103,7 @@ class CheckResults(Actor):
             line.rstrip("\n")
             if line != "":
                 splitted_line = line.split("=")
-                r[splitted_line[0]] = "=".join(splitted_line[1:])
+                r[splitted_line[0]] = join(splitted_line[1:])
 
         # if service_description is present then it's a service result otherwise host result
         if "service_description" in r:
