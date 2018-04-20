@@ -27,6 +27,7 @@ from wishbone import Actor
 from wishbone.event import Metric
 import re
 import sys
+import math
 
 
 class CheckResults(Actor):
