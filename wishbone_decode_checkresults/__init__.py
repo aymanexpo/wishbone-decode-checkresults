@@ -22,4 +22,4 @@
 #
 #
 
-from perfdata import CheckResults
+from checkresults import CheckResults

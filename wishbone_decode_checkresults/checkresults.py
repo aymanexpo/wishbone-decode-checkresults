@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-#       perfdata.py
+#       checkresults.py
 #
 #       Copyright 2018 Marco Musso <github@marcomusso.it>
 #
