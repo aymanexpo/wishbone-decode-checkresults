@@ -58,7 +58,7 @@ class CheckResults(Actor):
         - outbox:   Outgoing events
     '''
 
-    def __init__(self, actor_config, convert_dots=False, source="@data", destination="@data"):
+    def __init__(self, actor_config, convert_dots=False, source="@data", destination="@data", prefix=None):
         Actor.__init__(self, actor_config)
 
         self.pool.createQueue("inbox")
@@ -73,16 +73,23 @@ class CheckResults(Actor):
 
     def consume(self, event):
         try:
-            for metric in self.decodeMetrics(event.get(self.kwargs.source)):
+            for metric in self.decodeCheckResult(event.get(self.kwargs.source)):
                 e = event.clone()
                 e.set(metric, self.kwargs.destination)
                 self.submit(e, self.pool.queue.outbox)
         except Exception as err:
             raise Exception('Malformatted checkresults data received. Reason: %s Line: %s' % (err, sys.exc_traceback.tb_lineno))
 
-    def decodeMetrics(self, data):
+    def decodeCheckResult(self, data):
 
-        return self.__chopStringDict(data)
+      d = self.__chopStringDict(data)
+
+      graphite_payload = "%s.%s.return_code %d %d" % (d["host_name"], d["service_description"], int(d["return_code"]), int(math.floor(float(d["start_time"]))))
+
+      if self.kwargs.prefix is not None:
+          graphite_payload = "%s.%s" % (self.kwargs.prefix, graphite_payload)
+
+      return graphite_payload
 
     def __chopStringDict(self, data):
         '''Returns a dictionary of the provided raw service/host check string.'''
