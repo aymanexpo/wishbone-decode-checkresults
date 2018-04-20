@@ -74,10 +74,10 @@ class CheckResults(Actor):
 
     def consume(self, event):
         try:
-            for metric in self.decodeCheckResult(event.get(self.kwargs.source)):
-                e = event.clone()
-                e.set(metric, self.kwargs.destination)
-                self.submit(e, self.pool.queue.outbox)
+            metric = self.decodeCheckResult(event.get(self.kwargs.source))
+            e = event.clone()
+            e.set(metric, self.kwargs.destination)
+            self.submit(e, self.pool.queue.outbox)
         except Exception as err:
             raise Exception('Malformatted checkresults data received. Reason: %s Line: %s' % (err, sys.exc_traceback.tb_lineno))
 
