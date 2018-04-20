@@ -88,14 +88,7 @@ class CheckResults(Actor):
         '''Returns a dictionary of the provided raw service/host check string.'''
 
         r = {}
-        d = data.split('\n')
-
-        for item in d:
-            item_parts = item.split('=')
-            if len(item_parts) == 2:
-                (name, value) = item_parts
-
-        for line in service_checkresult.split("\n"):
+        for line in data.split("\n"):
             line.rstrip("\n")
             if line != "":
                 splitted_line = line.split("=")
