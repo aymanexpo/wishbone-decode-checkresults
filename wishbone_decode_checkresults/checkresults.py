@@ -85,7 +85,10 @@ class CheckResults(Actor):
 
       d = self.__chopStringDict(data)
 
-      graphite_payload = "%s.%s.return_code %d %d" % (d["host_name"], d["service_description"], int(d["return_code"]), int(math.floor(float(d["start_time"]))))
+      if "service_description" in d:
+          graphite_payload = "%s.%s.return_code %d %d" % (d["host_name"], d["service_description"], int(d["return_code"]), int(math.floor(float(d["start_time"]))))
+      else:
+          graphite_payload = "%s.return_code %d %d" % (d["host_name"], int(d["return_code"]), int(math.floor(float(d["start_time"]))))
 
       if self.kwargs.prefix is not None:
           graphite_payload = "%s.%s" % (self.kwargs.prefix, graphite_payload)
