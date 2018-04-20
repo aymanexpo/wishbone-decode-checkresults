@@ -39,9 +39,9 @@ class CheckResults(Actor):
 
     Parameters:
 
-        - sanitize_hostname(bool)(False)
+        - convert_dots(bool)(False)
            |  If True converts "." to "_".
-           |  Might be practical when FQDN hostnames mess up the namespace
+           |  Might be practical when FQDN hostnames (or service) mess up the namespace
            |  such as Graphite.
 
         - source(str)("@data")
@@ -58,17 +58,15 @@ class CheckResults(Actor):
         - outbox:   Outgoing events
     '''
 
-    def __init__(self, actor_config, sanitize_hostname=False, source="@data", destination="@data"):
+    def __init__(self, actor_config, convert_dots=False, source="@data", destination="@data"):
         Actor.__init__(self, actor_config)
 
         self.pool.createQueue("inbox")
         self.pool.createQueue("outbox")
         self.registerConsumer(self.consume, "inbox")
 
-        self.regex = re.compile('(.*?)(\D+)$')
-
     def preHook(self):
-        if self.kwargs.sanitize_hostname:
+        if self.kwargs.convert_dots:
             self.replacePeriod = self.__doReplacePeriod
         else:
             self.replacePeriod = self.__doNoReplacePeriod
@@ -84,9 +82,7 @@ class CheckResults(Actor):
 
     def decodeMetrics(self, data):
 
-        d = self.__chopStringDict(data)
-
-        yield Metric(d["start_time"], "nagios", d["host_name"], "%s.%s" % (d["service_description"], 'return_code'), d["return_code"], '', tuple([]))
+        return self.__chopStringDict(data)
 
     def __chopStringDict(self, data):
         '''Returns a dictionary of the provided raw service/host check string.'''
@@ -98,12 +94,12 @@ class CheckResults(Actor):
             item_parts = item.split('=')
             if len(item_parts) == 2:
                 (name, value) = item_parts
-            else:
-                name = item_parts[0]
-                value = item_parts[1]
 
-            name = self.__filter(name)
-            r[name] = value
+        for line in service_checkresult.split("\n"):
+            line.rstrip("\n")
+            if line != "":
+                splitted_line = line.split("=")
+                r[splitted_line[0]] = "=".join(splitted_line[1:])
 
         # if service_description is present then it's a service result otherwise host result
         if "service_description" in r:
